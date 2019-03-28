@@ -6,7 +6,10 @@ import sqlite3
 def sqlite_get(cursor, ideos):
     ideostr = f"{tuple(ideos)}" if len(ideos) > 1 else f"('{ideos}')"
     cursor.execute(f"SELECT ids FROM ids_data WHERE ideo in {ideostr}")
-    r = cursor.fetchone()[0]
+    try:
+        r = cursor.fetchone()[0]
+    except TypeError:
+        return set()
     s = set(r)
     output = s | {ideos[0]}
     for r, ideo in zip(cursor.fetchall(), ideos[1:]):
