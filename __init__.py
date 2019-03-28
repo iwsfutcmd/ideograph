@@ -4,18 +4,19 @@ import sys
 import sqlite3
 from pathlib import Path
 
-conn = sqlite3.connect(Path(__file__).parent/"ids-data.db")
+
+conn = sqlite3.connect(str(Path(__file__).parent/"ids-data.db"))
 cursor = conn.cursor()
 
 def find(components):
     ideostr = f"{tuple(components)}" if len(components) > 1 else f"('{components}')"
     cursor.execute(f"SELECT ids FROM ids_data WHERE ideo in {ideostr}")
     try:
-        r = cursor.fetchone()[0]
+        r = cursor.fetchone()
     except TypeError:
         return set()
-    s = set(r)
-    output = s | {components[0]}
+    s = set(r[0])
+    output = (s | {components[0]})
     for r, ideo in zip(cursor.fetchall(), components[1:]):
         s = set(r[0])
         output &= (s | {ideo})
