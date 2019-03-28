@@ -57,9 +57,6 @@ for ideo in data:
     for comp in data[ideo]:
         reverse_data[comp].append(ideo)
 
-json.dump(reverse_data, open("ids-data.json", "w"), ensure_ascii=False)
-pickle.dump(reverse_data, open("ids-data.pickle", "wb"))
-
 try:
     os.remove("ids-data.db")
 except FileNotFoundError:
