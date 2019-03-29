@@ -11,16 +11,7 @@ cursor = conn.cursor()
 def find(components):
     ideostr = f"{tuple(components)}" if len(components) > 1 else f"('{components}')"
     cursor.execute(f"SELECT ids FROM ids_data WHERE ideo in {ideostr}")
-    r = cursor.fetchone()
-    try:
-        output = set(r[0]) | {components[0]}
-    except TypeError:
-        output = {components[0]}
-    for r, ideo in zip(cursor.fetchall(), components[1:]):
-        try:
-            output &= set(r[0]) | {ideo}
-        except TypeError:
-            output &= {ideo}
+    output = set.intersection(*[set(r[0]) for r in cursor.fetchall()])
     return output
 
 if __name__ == "__main__":

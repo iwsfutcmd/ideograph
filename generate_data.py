@@ -6,6 +6,7 @@ import sqlite3
 import re
 from collections import defaultdict
 import os
+from pathlib import Path
 
 data = {}
 
@@ -51,6 +52,7 @@ def recursive_breakup(charset):
     else:
         return recursive_breakup(output)
 
+# data = {ideo: list(recursive_breakup(data[ideo]) - {ideo}) for ideo in data}
 data = {ideo: list(recursive_breakup(data[ideo]) - {ideo}) for ideo in data}
 reverse_data = defaultdict(list)
 for ideo in data:
@@ -58,11 +60,12 @@ for ideo in data:
     for comp in data[ideo]:
         reverse_data[comp].append(ideo)
 
+DB_FILE = Path(__file__).parent/"ids-data.db"
 try:
-    os.remove("ids-data.db")
+    os.remove(DB_FILE)
 except FileNotFoundError:
     pass
-conn = sqlite3.connect("ids-data.db")
+conn = sqlite3.connect(str(DB_FILE))
 c = conn.cursor()
 c.execute("CREATE TABLE ids_data (ideo text, ids text)")
 for ideo, ids in reverse_data.items():
