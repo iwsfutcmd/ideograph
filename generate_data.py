@@ -52,7 +52,6 @@ def recursive_breakup(charset):
     else:
         return recursive_breakup(output)
 
-# data = {ideo: list(recursive_breakup(data[ideo]) - {ideo}) for ideo in data}
 data = {ideo: list(recursive_breakup(data[ideo]) - {ideo}) for ideo in data}
 reverse_data = defaultdict(list)
 for ideo in data:

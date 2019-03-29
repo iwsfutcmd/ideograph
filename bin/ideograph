@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+
+import ideograph
+
+parser = argparse.ArgumentParser(description="Find ideographs by components.")
+parser.add_argument("components", type=str, help="components to search for")
+args = parser.parse_args()
+output = ideograph.find(args.components)
+sys.stdout.write("".join(sorted(output)))
+sys.exit(0)
