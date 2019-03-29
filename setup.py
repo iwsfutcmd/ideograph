@@ -23,7 +23,7 @@ setuptools.setup(
         "Natural Language :: Japanese",
         "Natural Language :: Korean",
         "Natural Language :: Vietnamese",
-        "Natural Language :: Zhuang",
+        # "Natural Language :: Zhuang",
     ],
     scripts=["bin/ideograph"],
 )
