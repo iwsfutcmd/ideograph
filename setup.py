@@ -17,6 +17,13 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
+        "Topic :: Text Processing :: Linguistic",
+        "Natural Language :: Chinese (Simplified)",
+        "Natural Language :: Chinese (Traditional)",
+        "Natural Language :: Japanese",
+        "Natural Language :: Korean",
+        "Natural Language :: Vietnamese",
+        "Natural Language :: Zhuang",
     ],
     scripts=["bin/ideograph"],
 )
