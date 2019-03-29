@@ -59,7 +59,7 @@ for ideo in data:
     for comp in data[ideo]:
         reverse_data[comp].append(ideo)
 
-DB_FILE = Path(__file__).parent/"ids-data.db"
+DB_FILE = Path(__file__).parent/"ideograph/ids-data.db"
 try:
     os.remove(DB_FILE)
 except FileNotFoundError:

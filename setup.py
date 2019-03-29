@@ -26,4 +26,5 @@ setuptools.setup(
         # "Natural Language :: Zhuang",
     ],
     scripts=["bin/ideograph"],
+    include_package_data=True,
 )
