@@ -70,5 +70,9 @@ c.execute("CREATE TABLE ids_data (ideo text, ids text)")
 for ideo, ids in reverse_data.items():
     c.execute("INSERT INTO ids_data VALUES (?, ?)", (ideo, "".join(ids)))
 c.execute("CREATE INDEX ideo_idx ON ids_data(ideo)")
+c.execute("CREATE TABLE cmp_data (ideo text, cmp text)")
+for ideo, cmp in data.items():
+    c.execute("INSERT INTO cmp_data VALUES (?, ?)", (ideo, "".join(cmp)))
+c.execute("CREATE INDEX cmp_idx ON cmp_data(ideo)")
 conn.commit()
 conn.close()

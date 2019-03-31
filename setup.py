@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ideograph",
-    version="1.0.0",
+    version="1.1.0",
     author="Ben Yang",
     author_email="benayang@gmail.com",
     description="Tool for finding ideographic (e.g. Han) characters from their components",

@@ -16,3 +16,12 @@ def find(components):
     except TypeError:
         output = set()
     return output
+
+def components(ideo):
+    if len(ideo) != 1:
+        raise ValueError("ideo must consist of one character")
+    cursor.execute("SELECT cmp FROM cmp_data WHERE ideo=?", ideo)
+    try:
+        return set(cursor.fetchone()[0])
+    except TypeError:
+        return set()
