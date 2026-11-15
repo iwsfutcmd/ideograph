@@ -27,6 +27,32 @@ def test_find_ignores_non_components():
     assert ideograph.find("'\"") == set()  # no SQL injection / quoting issues
 
 
+def test_find_repeated_components_mean_at_least_that_many():
+    two = ideograph.find("木木")
+    assert {"林", "森", "麻"} <= two
+    assert "杜" not in two and "木" not in two
+    three = ideograph.find("木木木")
+    assert "森" in three and "林" not in three
+    assert {"品", "器"} <= ideograph.find("口口口")
+    assert "器" in ideograph.find("口口口口") and "品" not in ideograph.find("口口口口")
+    assert "晶" in ideograph.find("日日日")
+    # Order and spacing don't matter; other components still have to be present.
+    assert ideograph.find("木 日 木") == ideograph.find("木木日")
+    assert ideograph.find("木木日") <= two
+    # Normalization happens before counting: ⽊ is 木.
+    assert ideograph.find("⽊木") == two
+    # Ignored characters don't count.
+    assert ideograph.find("木xx") == ideograph.find("木")
+
+
+def test_component_counts():
+    assert ideograph.component_counts("森")["木"] == 3
+    assert ideograph.component_counts("森")["林"] == 1
+    assert ideograph.component_counts("器")["口"] == 4
+    assert set(ideograph.component_counts("楊")) == ideograph.components("楊")
+    assert ideograph.component_counts("a") == {}
+
+
 def test_find_accepts_iterables():
     assert ideograph.find(["木", "日"]) == ideograph.find("木日")
 
@@ -96,6 +122,12 @@ def test_ideographs_and_info():
 )
 def test_ids_syntax(ids, expected):
     assert ids_syntax.components(ids, strict=True) == expected
+
+
+def test_ids_syntax_counts():
+    assert ids_syntax.component_counts("⿱口⿰口口") == {"口": 3}
+    assert ids_syntax.component_counts("⿰木木") == {"木": 2}
+    assert ids_syntax.component_counts("㇯⿰木木木") == {"木": 2}
 
 
 def test_ids_syntax_malformed():

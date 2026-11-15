@@ -35,6 +35,18 @@ contain *all* of them (at any depth).
 䵘楊糃鸉𣓗𣓾𣝻𣿘𥂸𥟘𥠜𦓻𦼴𩁒𪎥𪎧𪳷𬬍𭧺𰘲𰟣𱈾𱤅𲦺
 ```
 
+A component given more than once must occur at least that many times, counting
+at every depth of the decomposition:
+
+```python
+>>> "林" in ideograph.find("木木"), "杜" in ideograph.find("木木")
+(True, False)
+>>> "森" in ideograph.find("木木木"), "林" in ideograph.find("木木木")
+(True, False)
+>>> "品" in ideograph.find("口口口")
+True
+```
+
 Characters in the string that are not components of anything (spaces, Latin
 letters, IDS operators …) are ignored. Input is normalized first: CJK
 compatibility ideographs become their canonical equivalents, Kangxi Radicals
@@ -57,6 +69,18 @@ in the character's own IDS.
 ['㇒', '一', '丨', '丿', '勹', '勿', '十', '囗', '日', '旦', '昜', '木', '𠃌', '𠆢']
 >>> sorted(ideograph.components("楊", recursive=False))
 ['昜', '木']
+```
+
+### `component_counts()`
+
+`component_counts()` is like `components()`, but says how often each component
+occurs (at any depth). Where a character has several IDS (regional glyph
+forms), the largest count for each component is used.
+
+```python
+>>> c = ideograph.component_counts("森")   # ⿱木林, and 林 = ⿰木木
+>>> c["木"], c["林"]
+(3, 1)
 ```
 
 ### `ids()`, `total_strokes()`, `ideographs()`, `aliases()`, `data_info()`

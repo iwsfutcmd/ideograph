@@ -36,5 +36,13 @@ restrictions apart from the Unicode License for the UCD-derived parts.
   that the second operand of the subtraction operator ㇯ is excluded, since it
   names what is *removed*. Components of all of a character's sequences
   (regional variants) are combined, then expanded recursively.
+* A few IDS describe a character by subtraction from a character that in turn
+  contains it (𫝀 = ㇯五一, "五 minus 一", while 五 = ⿱一𫝀). Within such cycles,
+  links that exist only because a character is the minuend of ㇯ are dropped
+  (16 links at present; listed in the `cycle_break` table and by
+  `ideograph.cycle_breaks()`), so the component graph is acyclic.
+* Component counts (for repeated components in `find()`, and
+  `component_counts()`) count occurrences at every depth, per IDS; when a
+  character has several IDS, the largest count for each component is kept.
 * Stroke counts are the first Unihan `kTotalStrokes` value. CJK Strokes count
   as 1; radical forms take the count of their equivalent unified ideograph.

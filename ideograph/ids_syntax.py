@@ -10,12 +10,15 @@ as a placeholder for a component that cannot be represented.
 
 from __future__ import annotations
 
+from collections import Counter
+
 __all__ = [
     "OPERATORS",
     "SUBTRACTION",
     "UNKNOWN",
     "VARIATION_INDICATOR",
     "IDSSyntaxError",
+    "component_counts",
     "components",
     "is_operator",
     "strip_variation_selectors",
@@ -62,9 +65,9 @@ def strip_variation_selectors(text: str) -> str:
     return "".join(c for c in text if not _is_variation_selector(c))
 
 
-def _parse(ids: str) -> set[str]:
+def _parse(ids: str, minuends: bool = True) -> Counter[str]:
     tokens = strip_variation_selectors(ids)
-    found: set[str] = set()
+    found: Counter[str] = Counter()
     pos = 0
 
     def parse(collect: bool) -> None:
@@ -76,16 +79,44 @@ def _parse(ids: str) -> set[str]:
         arity = OPERATORS.get(token)
         if arity is None:
             if collect and token != UNKNOWN:
-                found.add(token)
+                found[token] += 1
             return
         for operand in range(arity):
-            # The second operand of ㇯ is what gets *removed*.
-            parse(collect and not (token == SUBTRACTION and operand == 1))
+            if token == SUBTRACTION:
+                # ㇯AB is A with B removed: B is never a component, and A
+                # (the minuend) only when *minuends* is true.
+                parse(collect and operand == 0 and minuends)
+            else:
+                parse(collect)
 
     parse(True)
     if pos != len(tokens):
         raise IDSSyntaxError(f"trailing characters in IDS {ids!r}")
     return found
+
+
+def component_counts(ids: str, *, strict: bool = False, minuends: bool = True) -> Counter[str]:
+    """Return the components named in a single IDS with how often each occurs.
+
+    Like :func:`components`, but repeated components are counted.  With
+    ``minuends=False``, the first operand of ``㇯`` (the thing something is
+    subtracted from) is not counted either.
+
+    >>> component_counts("⿱口⿰口口")
+    Counter({'口': 3})
+    >>> component_counts("⿱木林")
+    Counter({'木': 1, '林': 1})
+    """
+    try:
+        return _parse(ids, minuends)
+    except IDSSyntaxError:
+        if strict:
+            raise
+        return Counter(
+            c
+            for c in strip_variation_selectors(ids)
+            if c not in OPERATORS and c != UNKNOWN
+        )
 
 
 def components(ids: str, *, strict: bool = False) -> set[str]:
@@ -101,13 +132,4 @@ def components(ids: str, *, strict: bool = False) -> set[str]:
     >>> sorted(components("㇯東㇒"))
     ['東']
     """
-    try:
-        return _parse(ids)
-    except IDSSyntaxError:
-        if strict:
-            raise
-        return {
-            c
-            for c in strip_variation_selectors(ids)
-            if c not in OPERATORS and c != UNKNOWN
-        }
+    return set(component_counts(ids, strict=strict))

@@ -30,7 +30,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 import zipfile
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -234,6 +234,53 @@ def load_chise(paths: list[Path]) -> dict[str, list[tuple[str, str]]]:
 # Building
 
 
+def strongly_connected(graph: dict[str, set[str]]) -> list[set[str]]:
+    """Tarjan's algorithm (iterative): strongly connected components of size > 1."""
+    index: dict[str, int] = {}
+    low: dict[str, int] = {}
+    on_stack: set[str] = set()
+    stack: list[str] = []
+    result: list[set[str]] = []
+    counter = 0
+    for root in sorted(graph, key=ord):
+        if root in index:
+            continue
+        work = [(root, iter(sorted(graph.get(root, ()), key=ord)))]
+        index[root] = low[root] = counter
+        counter += 1
+        stack.append(root)
+        on_stack.add(root)
+        while work:
+            node, children = work[-1]
+            for child in children:
+                if child not in graph:
+                    continue
+                if child not in index:
+                    index[child] = low[child] = counter
+                    counter += 1
+                    stack.append(child)
+                    on_stack.add(child)
+                    work.append((child, iter(sorted(graph.get(child, ()), key=ord))))
+                    break
+                if child in on_stack:
+                    low[node] = min(low[node], index[child])
+            else:
+                work.pop()
+                if work:
+                    low[work[-1][0]] = min(low[work[-1][0]], low[node])
+                if low[node] == index[node]:
+                    scc = set()
+                    while True:
+                        member = stack.pop()
+                        on_stack.discard(member)
+                        scc.add(member)
+                        if member == node:
+                            break
+                    if len(scc) > 1:
+                        result.append(scc)
+    return result
+
+
 def build(args: argparse.Namespace) -> None:
     cache: Path = args.cache
     print("Fetching sources…", file=sys.stderr)
@@ -271,6 +318,23 @@ def build(args: argparse.Namespace) -> None:
         comps.discard(char)
         direct[char] = comps
 
+    # Break decomposition cycles.  They all come from subtraction sequences
+    # (𫝀 = ㇯五一 "五 minus 一", while 五 = ⿱一𫝀), so within a cycle, drop
+    # links that exist only because a character is the minuend of ㇯.  The
+    # web app applies the same list (see cycle_breaks()), so both see the
+    # same acyclic graph.
+    cuts: dict[str, set[str]] = defaultdict(set)
+    for scc in strongly_connected(direct):
+        for char in scc:
+            seqs = entries[char][1]
+            for comp in direct[char] & scc:
+                if not any(comp in idslib.component_counts(ids, minuends=False) for ids, _ in seqs):
+                    cuts[char].add(comp)
+    for char, comps in cuts.items():
+        direct[char] -= comps
+    if remaining := strongly_connected(direct):
+        print(f"  warning: {len(remaining)} decomposition cycle(s) remain: {remaining}", file=sys.stderr)
+
     sys.setrecursionlimit(max(10_000, sys.getrecursionlimit()))
     closure: dict[str, set[str]] = {}
     cycles = 0
@@ -294,6 +358,49 @@ def build(args: argparse.Namespace) -> None:
 
     for char in entries:
         close(char, set())
+
+    # How often each component occurs, at any depth (森 = ⿱木林, 林 = ⿰木木:
+    # 木 ×3, 林 ×1).  Counts are taken per IDS; when a character has several
+    # (regional forms), the largest count for each component is kept.
+    alternatives: dict[str, list[Counter[str]]] = {}
+    for char, (_, seqs) in entries.items():
+        alts = []
+        for ids, _src in seqs:
+            counted = idslib.component_counts(ids)
+            counted.pop(char, None)
+            for comp in cuts.get(char, ()):
+                counted.pop(comp, None)
+            if counted:
+                alts.append(counted)
+        alternatives[char] = alts
+
+    multiset: dict[str, Counter[str]] = {}
+
+    def count(char: str, stack: set[str]) -> Counter[str]:
+        if char in multiset:
+            return multiset[char]
+        stack.add(char)
+        best: Counter[str] = Counter()
+        for alt in alternatives.get(char, ()):
+            total: Counter[str] = Counter()
+            for comp, n in alt.items():
+                total[comp] += n
+                if comp in stack:
+                    continue
+                for sub, m in count(comp, stack).items():
+                    total[sub] += n * m
+            best |= total  # keywise maximum
+        stack.discard(char)
+        best.pop(char, None)
+        multiset[char] = best
+        return best
+
+    for char in entries:
+        count(char, set())
+
+    def encode_counts(counter: Counter[str]) -> str:
+        """Components occurring more than once, e.g. "木3林2"."""
+        return "".join(f"{c}{n}" for c, n in sorted(counter.items(), key=lambda i: ord(i[0])) if n > 1)
 
     index: dict[str, set[str]] = defaultdict(set)
     for char in entries:
@@ -324,16 +431,19 @@ def build(args: argparse.Namespace) -> None:
             is_entry INTEGER NOT NULL,   -- 1 if a unified ideograph with its own record
             source TEXT,                 -- 'babelstone', 'chise' or NULL
             ids TEXT,                    -- JSON list of [ids, sources] pairs
-            components TEXT              -- every component, recursively
+            components TEXT,             -- every component, recursively
+            counts TEXT                  -- components occurring 2+ times, e.g. '木3林2'
         ) WITHOUT ROWID;
         CREATE TABLE idx (component TEXT PRIMARY KEY, chars TEXT NOT NULL) WITHOUT ROWID;
         CREATE TABLE alias (char TEXT PRIMARY KEY, target TEXT NOT NULL) WITHOUT ROWID;
+        -- decomposition links ignored to break cycles
+        CREATE TABLE cycle_break (char TEXT NOT NULL, component TEXT NOT NULL, PRIMARY KEY (char, component)) WITHOUT ROWID;
         """
     )
     for char in sorted(all_chars, key=ord):
         source, seqs = entries.get(char, ("", []))
         c.execute(
-            "INSERT INTO chars VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO chars VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 char,
                 char_strokes[char],
@@ -341,11 +451,16 @@ def build(args: argparse.Namespace) -> None:
                 source or None,
                 json.dumps(seqs, ensure_ascii=False, separators=(",", ":")) if seqs else None,
                 "".join(sorted(closure.get(char, ()), key=ord)),
+                encode_counts(multiset.get(char, Counter())) or None,
             ),
         )
     for comp in sorted(index, key=ord):
         c.execute("INSERT INTO idx VALUES (?, ?)", (comp, "".join(sorted(index[comp], key=ord))))
     c.executemany("INSERT INTO alias VALUES (?, ?)", sorted(aliases.items()))
+    c.executemany(
+        "INSERT INTO cycle_break VALUES (?, ?)",
+        sorted((char, comp) for char, comps in cuts.items() for comp in comps),
+    )
 
     counts = defaultdict(int)
     for source, _ in entries.values():
