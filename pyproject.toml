@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ideograph"
+dynamic = ["version"]
+description = "Find ideographic (e.g. Han) characters from their components"
+readme = "README.md"
+requires-python = ">=3.10"
+# Code: MIT.  Bundled data (ideograph/ids-data.db) includes CHISE IDS data,
+# so the database is GPL-2.0-or-later; see DATA.md.
+license = "MIT AND GPL-2.0-or-later AND Unicode-3.0"
+license-files = ["LICENSE", "LICENSES/*.txt", "DATA.md"]
+authors = [{ name = "Ben Yang", email = "benayang@gmail.com" }]
+keywords = ["CJK", "Han", "hanzi", "kanji", "hanja", "chữ Hán", "chữ Nôm", "IDS", "ideograph", "Unicode", "Unihan"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Text Processing :: Linguistic",
+    "Natural Language :: Chinese (Simplified)",
+    "Natural Language :: Chinese (Traditional)",
+    "Natural Language :: Japanese",
+    "Natural Language :: Korean",
+    "Natural Language :: Vietnamese",
+]
+
+[project.urls]
+Homepage = "https://github.com/iwsfutcmd/ideograph"
+"Web app" = "https://iwsfutcmd.github.io/ideograph-webapp/"
+
+[project.scripts]
+ideograph = "ideograph.__main__:main"
+
+[tool.setuptools]
+packages = ["ideograph"]
+
+[tool.setuptools.package-data]
+ideograph = ["ids-data.db"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ideograph.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "ideograph"]
+addopts = "--doctest-modules"
