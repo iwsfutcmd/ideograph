@@ -37,6 +37,7 @@ def test_normalization():
     assert ideograph.normalize("⺮") == "𥫗"  # unused radical form → equivalent
     assert ideograph.normalize("⺈") == "⺈"  # radical form used in the data
     assert ideograph.find("⽊") == ideograph.find("木")
+    assert ideograph.aliases()["⺮"] == "𥫗"
 
 
 def test_components():

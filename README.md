@@ -59,7 +59,7 @@ in the character's own IDS.
 ['昜', '木']
 ```
 
-### `ids()`, `total_strokes()`, `ideographs()`, `data_info()`
+### `ids()`, `total_strokes()`, `ideographs()`, `aliases()`, `data_info()`
 
 ```python
 >>> ideograph.ids("𧵉")   # one IDS per regional glyph form, with its sources

@@ -21,6 +21,7 @@ from . import ids_syntax
 
 __all__ = [
     "IDS",
+    "aliases",
     "components",
     "data_info",
     "find",
@@ -173,6 +174,15 @@ def ideographs() -> Iterator[str]:
     """Iterate over every ideograph in the data, in code point order."""
     for (char,) in _query("SELECT char FROM chars WHERE is_entry = 1 ORDER BY char"):
         yield char
+
+
+def aliases() -> dict[str, str]:
+    """Return the radical/stroke aliases applied by :func:`normalize`.
+
+    Maps CJK Radicals Supplement and CJK Strokes characters that the data
+    does not use to their equivalent unified ideograph (e.g. ⺮ → 𥫗).
+    """
+    return dict(_alias_map())
 
 
 def data_info() -> dict[str, str]:
