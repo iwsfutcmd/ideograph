@@ -1,0 +1,54 @@
+name: Publish to PyPI
+
+# Push a tag matching the package version (e.g. v2.0.0), or create a GitHub
+# release with such a tag, to build, test and upload a release.
+#
+# Uses PyPI Trusted Publishing (OIDC): no API token is stored in the repo.
+# The project on PyPI must list this repository, this workflow file
+# (publish.yml) and the environment "pypi" as a trusted publisher.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+      - name: Check that the tag matches the package version
+        run: |
+          version=$(python -c 'import ast, pathlib; m = ast.parse(pathlib.Path("ideograph/__init__.py").read_text()); print(next(n.value.value for n in m.body if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "__version__"))')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package version $version"
+            exit 1
+          fi
+      - run: pip install build twine pytest
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Test the built wheel
+        run: |
+          pip install dist/*.whl
+          cd tests && python -m pytest -p no:cacheprovider -o addopts="" .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ideograph/
+    permissions:
+      id-token: write  # for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

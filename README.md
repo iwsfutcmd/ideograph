@@ -97,7 +97,7 @@ Component data comes from [BabelStone IDS](https://babelstone.co.uk/CJK/IDS.TXT)
 supplemented by [CHISE IDS](https://gitlab.chise.org/CHISE/ids) for characters
 BabelStone does not yet cover, and stroke counts from the
 [Unihan database](https://www.unicode.org/reports/tr38/). See
-[DATA.md](DATA.md) for details and licensing: **the bundled database is
+[DATA.md](https://github.com/iwsfutcmd/ideograph/blob/master/DATA.md) for details and licensing: **the bundled database is
 GPL-2.0-or-later** because of the CHISE data; the code is MIT.
 
 Earlier versions (1.x) used [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids),
@@ -120,3 +120,18 @@ script and can be overridden on the command line (`--help`).
 pip install -e . pytest
 pytest
 ```
+
+### Releasing
+
+Releases are published to PyPI by GitHub Actions
+([`publish.yml`](https://github.com/iwsfutcmd/ideograph/blob/master/.github/workflows/publish.yml))
+using PyPI Trusted Publishing. Bump `__version__` in `ideograph/__init__.py`,
+commit, then push a matching tag:
+
+```bash
+git tag v2.0.1
+git push origin v2.0.1
+```
+
+The workflow checks that the tag matches the version, builds and tests the
+wheel, and uploads it.
